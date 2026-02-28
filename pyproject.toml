@@ -1,0 +1,87 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pdf-sdl"
+version = "0.1.0"
+description = "Semantic Data Layer for PDF – Python reference implementation of ISO 32000-2 DataDef extension"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Christian Nyffenegger", email = "christian@link-genetic.com" },
+]
+keywords = ["pdf", "semantic", "data-layer", "iso-32000", "datadef", "linkmeta", "pdf-association"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "pikepdf>=8.0.0",
+    "pydantic>=2.0.0",
+    "click>=8.0.0",
+    "rich>=13.0.0",
+    "jsonschema>=4.0.0",
+    "python-dateutil>=2.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "hatch",
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings[python]>=0.24.0",
+]
+
+[project.scripts]
+pdf-sdl = "pdf_sdl.cli.main:cli"
+
+[project.urls]
+Homepage = "https://github.com/Link-Genetic-Inc/pdf-sdl"
+Repository = "https://github.com/Link-Genetic-Inc/pdf-sdl"
+"Issue Tracker" = "https://github.com/Link-Genetic-Inc/pdf-sdl/issues"
+"PDF Association Issue #725" = "https://github.com/pdf-association/pdf-issues/issues/725"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pdf_sdl"]
+
+[tool.hatch.envs.default]
+dependencies = ["pdf-sdl[dev]"]
+
+[tool.hatch.envs.default.scripts]
+test = "pytest tests/ -v --cov=pdf_sdl --cov-report=term-missing"
+lint = "ruff check src/ tests/"
+typecheck = "mypy src/"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+
+[tool.coverage.run]
+source = ["src/pdf_sdl"]
