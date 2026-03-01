@@ -135,14 +135,18 @@ pdf-sdl list report-sdl.pdf
 
 ---
 
-## 18 Standard DataTypes
+## 25 Standard DataTypes
 
 | Category | DataTypes |
 |----------|-----------|
+| Category | DataTypes |
+|----------|-----------| 
 | **Data extraction** | `/Table` · `/Chart` · `/Record` · `/Value` · `/Series` · `/Form` |
 | **References & links** | `/Link` · `/Reference` |
 | **Scientific & engineering** | `/Formula` · `/Code` · `/Measurement` · `/Geospatial` |
 | **Governance & compliance** | `/Classification` · `/Provenance` · `/Identity` · `/Translation` · `/Timeline` |
+| **Process & risk** | `/Process` · `/Risk` · `/Statistics` · `/Finding` |
+| **Legal & materials** | `/License` · `/Obligation` · `/Material` |
 | **Extensible** | `/Custom` (requires `/Schema` URI) |
 
 ---
@@ -197,7 +201,7 @@ mypy src/
 
 | Document | Description |
 |----------|-------------|
-| [SDL Technical Specification v1.3.0](https://github.com/Link-Genetic-Inc/pdf-sdl-spec/blob/main/specification/SDL_TechnicalSpecification_DataDef_Dictionary_v1_3_0.pdf) | DataDef dictionary, 18 DataTypes, binding mechanisms, trust levels |
+| [SDL Technical Specification v1.4.0](https://github.com/Link-Genetic-Inc/pdf-sdl-spec/blob/main/specification/SDL_TechnicalSpecification_DataDef_Dictionary_v1_4_0.pdf) | DataDef dictionary, 25 DataTypes, binding mechanisms, trust levels |
 | [LinkMeta Proposal v2.3.0](https://github.com/Link-Genetic-Inc/pdf-sdl-spec/blob/main/proposals/PDF_Association_Proposal_LinkMeta_Issue725_v2_3_0.pdf) | Internet-aware links – direct response to Issue #725 |
 | [White Paper v2.3.0](https://github.com/Link-Genetic-Inc/pdf-sdl-spec/blob/main/whitepaper/SDL_WhitePaper_From_Visual_to_Data_Fidelity_v2_3_0.pdf) | From Visual Fidelity to Data Fidelity |
 | [Industry Profiles](https://github.com/Link-Genetic-Inc/pdf-sdl-spec/tree/main/profiles) | Financial · Pharmaceutical · Legal · Government · Scientific · Engineering |
