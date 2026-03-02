@@ -41,7 +41,7 @@ All notable changes to pdf-sdl will be documented in this file.
 - Three complete usage examples
 
 ### Specification
-- Implements SDL Technical Specification v1.2.0
+- Implements SDL Technical Specification v1.4.0
 - Implements LinkMeta Proposal v2.3.0
 - Targets ISO 32000-2 (PDF 2.0) extension
 - PDF Association Issue #725 – Internet-Aware Content Representation

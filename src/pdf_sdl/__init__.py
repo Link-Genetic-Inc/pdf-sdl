@@ -40,7 +40,7 @@ Quick Start::
             print(dd.data_type, dd.conformance_level())
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Christian Nyffenegger, Link Genetic GmbH"
 __spec_version__ = "SDL Technical Specification v1.4.0"
 __issue__ = "PDF Association Issue #725"
