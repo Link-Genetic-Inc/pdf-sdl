@@ -2,15 +2,15 @@
 pdf-sdl – Semantic Data Layer for PDF
 ======================================
 Reference implementation of the SDL DataDef extension to ISO 32000-2.
-
 Addresses Issue #725 – Lack of Internet-Aware Content Representation in PDF.
-Specification: SDL Technical Specification v1.2.0
+
+Specification: SDL Technical Specification v1.4.0
 Proposal:      LinkMeta / Issue #725 v2.3.0
 Author:        Christian Nyffenegger, Link Genetic GmbH
 
 Quick Start::
 
-    from pdf_sdl import DataDefBuilder, LinkMetaBuilder, SDLWriter, SDLReader
+    from pdf_sdl import DataDefBuilder, SDLWriter, SDLReader
 
     # Build a financial table DataDef
     datadef = (
@@ -42,7 +42,7 @@ Quick Start::
 
 __version__ = "0.1.0"
 __author__ = "Christian Nyffenegger, Link Genetic GmbH"
-__spec_version__ = "SDL Technical Specification v1.2.0"
+__spec_version__ = "SDL Technical Specification v1.4.0"
 __issue__ = "PDF Association Issue #725"
 
 # Core models
@@ -64,6 +64,17 @@ from .models.datadef import (
     MeasurementData,
     MeasurementEntry,
     HashValue,
+    # New in v1.4.0
+    ProcessData,
+    ProcessStep,
+    RiskData,
+    RiskEntry,
+    StatisticsData,
+    StatisticsGroup,
+    FindingData,
+    LicenseData,
+    ObligationData,
+    MaterialData,
 )
 from .models.linkmeta import (
     LinkMeta,
@@ -108,6 +119,17 @@ __all__ = [
     "MeasurementData",
     "MeasurementEntry",
     "HashValue",
+    # New in v1.4.0
+    "ProcessData",
+    "ProcessStep",
+    "RiskData",
+    "RiskEntry",
+    "StatisticsData",
+    "StatisticsGroup",
+    "FindingData",
+    "LicenseData",
+    "ObligationData",
+    "MaterialData",
     "LinkMeta",
     "LinkStatus",
     "ContentHash",
