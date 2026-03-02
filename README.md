@@ -2,7 +2,7 @@
 
 **Semantic Data Layer (SDL) for PDF** – Python reference implementation of the DataDef dictionary extension to ISO 32000-2.
 
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/) [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-0.1.0-orange.svg)](https://github.com/Link-Genetic-Inc/pdf-sdl/releases) [![Tests](https://img.shields.io/badge/tests-68%20passing-brightgreen.svg)](tests/) [![PDF Association](https://img.shields.io/badge/PDF%20Association-Issue%20%23725-blue.svg)](https://github.com/pdf-association/pdf-issues/issues/725)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/) [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-0.1.0-orange.svg)](https://github.com/Link-Genetic-Inc/pdf-sdl/releases) [![Tests](https://img.shields.io/badge/tests-82%20passing-brightgreen.svg)](tests/) [![PDF Association](https://img.shields.io/badge/PDF%20Association-Issue%20%23725-blue.svg)](https://github.com/pdf-association/pdf-issues/issues/725)
 
 Addresses [Issue #725](https://github.com/pdf-association/pdf-issues/issues/725) – *Lack of Internet-Aware Content Representation in PDF* – submitted to the PDF Association Technical Working Group / ISO TC 171 SC 2.
 
@@ -218,7 +218,7 @@ pdf_sdl/
 git clone https://github.com/Link-Genetic-Inc/pdf-sdl.git
 cd pdf-sdl
 pip install -e ".[dev]"
-pytest tests/ -v --cov=pdf_sdl  # 68 tests
+pytest tests/ -v --cov=pdf_sdl  # 82 tests
 ruff check src/ tests/
 mypy src/
 ```
@@ -235,7 +235,7 @@ mypy src/
 | [LinkMeta Proposal v2.3.0](https://github.com/Link-Genetic-Inc/pdf-sdl-spec/blob/main/proposals/PDF_Association_Proposal_LinkMeta_Issue725_v2_3_0.pdf) | Internet-aware links – direct response to Issue #725 |
 | [White Paper v2.3.0](https://github.com/Link-Genetic-Inc/pdf-sdl-spec/blob/main/whitepaper/SDL_WhitePaper_From_Visual_to_Data_Fidelity_v2_3_0.pdf) | From Visual Fidelity to Data Fidelity |
 | [Industry Profiles](https://github.com/Link-Genetic-Inc/pdf-sdl-spec/tree/main/profiles) | Financial · Pharmaceutical · Legal · Government · Scientific · Engineering |
-| [🔗 Live Validator](https://link-genetic-inc.github.io/pdf-sdl-spec/presentation/SDL_DataDef_Validator_v1_0.html) | Interactive DataDef validation tool |
+| [🔗 Live Validator](https://link-genetic-inc.github.io/pdf-sdl-spec/presentation/SDL_DataDef_Validator_v1_1.html) | Interactive DataDef validation tool |
 
 ---
 
