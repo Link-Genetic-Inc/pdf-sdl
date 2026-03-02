@@ -3,6 +3,7 @@ Test Suite for pdf-sdl
 =======================
 Tests for core models, builders, validator, and PDF round-trip.
 Covers the conformance test suite outline from §10 of the specification.
+SDL Technical Specification v1.4.0 – 25 DataTypes.
 """
 
 from __future__ import annotations
@@ -13,8 +14,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
-
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from pdf_sdl import (
@@ -39,7 +40,6 @@ from pdf_sdl import (
 # ===========================================================================
 # Fixtures
 # ===========================================================================
-
 
 @pytest.fixture
 def minimal_datadef() -> DataDef:
@@ -134,7 +134,6 @@ def full_linkmeta() -> LinkMeta:
 # Model Tests
 # ===========================================================================
 
-
 class TestDataDefModel:
     """Tests for the DataDef Pydantic model (§3)."""
 
@@ -166,15 +165,6 @@ class TestDataDefModel:
         assert full_table_datadef.conformance_level() == ConformanceLevel.PROVENANCE
 
     def test_conformance_signed(self) -> None:
-        dd = (
-            DataDefBuilder.table()
-            .with_schema("https://schema.org/Table")
-            .with_source("ERP")
-            .trust_signed()
-            .trust_author("MyApp")  # sets generator+created
-            .build({"rows": []})
-        )
-        # trust_author overrides trust_signed, so let's test the signed path properly
         dd2 = DataDef(
             data_type=DataType.TABLE,
             format=DataFormat.JSON,
@@ -198,7 +188,6 @@ class TestDataDefModel:
             )
 
     def test_custom_requires_schema(self) -> None:
-        # Pydantic model_validator raises if DataType.CUSTOM without schema_uri
         with pytest.raises(Exception):
             DataDef(
                 data_type=DataType.CUSTOM,
@@ -221,16 +210,37 @@ class TestDataDefModel:
         parsed = dd.data_as_dict()
         assert parsed["name"] == "test"
 
-    def test_all_standard_datatypes_constructible(self) -> None:
-        """Verify all 18 DataTypes can be instantiated."""
+    def test_all_25_datatypes_constructible(self) -> None:
+        """Verify all 25 DataTypes can be instantiated."""
         factory_methods = [
-            DataDefBuilder.table, DataDefBuilder.record, DataDefBuilder.value,
-            DataDefBuilder.series, DataDefBuilder.chart, DataDefBuilder.form,
-            DataDefBuilder.link, DataDefBuilder.reference, DataDefBuilder.formula,
-            DataDefBuilder.code, DataDefBuilder.measurement, DataDefBuilder.geospatial,
-            DataDefBuilder.timeline, DataDefBuilder.classification, DataDefBuilder.provenance,
-            DataDefBuilder.identity, DataDefBuilder.translation,
+            # Original 18
+            DataDefBuilder.table,
+            DataDefBuilder.record,
+            DataDefBuilder.value,
+            DataDefBuilder.series,
+            DataDefBuilder.chart,
+            DataDefBuilder.form,
+            DataDefBuilder.link,
+            DataDefBuilder.reference,
+            DataDefBuilder.formula,
+            DataDefBuilder.code,
+            DataDefBuilder.measurement,
+            DataDefBuilder.geospatial,
+            DataDefBuilder.timeline,
+            DataDefBuilder.classification,
+            DataDefBuilder.provenance,
+            DataDefBuilder.identity,
+            DataDefBuilder.translation,
+            # New in v1.4.0
+            DataDefBuilder.process,
+            DataDefBuilder.risk,
+            DataDefBuilder.statistics,
+            DataDefBuilder.finding,
+            DataDefBuilder.license_,
+            DataDefBuilder.obligation,
+            DataDefBuilder.material,
         ]
+        assert len(factory_methods) == 24  # 24 typed + custom below
         for factory in factory_methods:
             dd = factory().build({"test": True})
             assert dd.version == 1
@@ -244,7 +254,6 @@ class TestDataDefModel:
 # ===========================================================================
 # Builder Tests
 # ===========================================================================
-
 
 class TestDataDefBuilder:
     """Tests for the DataDefBuilder fluent API."""
@@ -325,11 +334,182 @@ class TestDataDefBuilder:
         dd = DataDefBuilder.record().build('{"name": "test"}')
         assert dd.data_as_dict()["name"] == "test"
 
+    # --- New DataType builder tests (v1.4.0) ---
+
+    def test_process_datatype(self) -> None:
+        dd = (
+            DataDefBuilder.process()
+            .trust_author("Process Modeler v1")
+            .build({
+                "notation": "BPMN 2.0",
+                "title": "Invoice Approval",
+                "steps": [
+                    {"id": "s1", "type": "startEvent", "label": "Invoice received"},
+                    {"id": "s2", "type": "task", "label": "Finance review", "actor": "Finance Dept"},
+                    {"id": "s3", "type": "endEvent", "label": "Approved"},
+                ],
+                "flows": [{"from": "s1", "to": "s2"}, {"from": "s2", "to": "s3"}],
+            })
+        )
+        assert dd.data_type == DataType.PROCESS
+        d = dd.data_as_dict()
+        assert d["notation"] == "BPMN 2.0"
+        assert len(d["steps"]) == 3
+
+    def test_risk_datatype(self) -> None:
+        dd = (
+            DataDefBuilder.risk()
+            .trust_author("RMS v2")
+            .with_schema("https://schema.org/RiskAssessment")
+            .build({
+                "framework": "ISO 31000:2018",
+                "assessmentDate": "2025-01-15",
+                "risks": [{
+                    "id": "R-001",
+                    "category": "Operational",
+                    "description": "System outage risk",
+                    "likelihood": 2,
+                    "impact": 4,
+                    "inherentRisk": 8,
+                    "controls": ["Redundant systems", "24/7 monitoring"],
+                    "residualRisk": 4,
+                    "owner": "CTO",
+                    "status": "open",
+                }],
+            })
+        )
+        assert dd.data_type == DataType.RISK
+        d = dd.data_as_dict()
+        assert d["framework"] == "ISO 31000:2018"
+        assert d["risks"][0]["id"] == "R-001"
+        assert d["risks"][0]["inherentRisk"] == 8
+
+    def test_statistics_datatype(self) -> None:
+        dd = (
+            DataDefBuilder.statistics()
+            .trust_author("R v4.3.1")
+            .build({
+                "analysis": "Independent samples t-test",
+                "software": "R 4.3.1",
+                "reportingStandard": "APA 7th",
+                "groups": [
+                    {"name": "Treatment", "n": 45, "mean": 12.3, "sd": 2.1},
+                    {"name": "Control", "n": 43, "mean": 10.8, "sd": 1.9},
+                ],
+                "result": {
+                    "statistic": 3.42,
+                    "df": 85.2,
+                    "pValue": 0.001,
+                    "cohensD": 0.74,
+                    "significant": True,
+                    "alpha": 0.05,
+                },
+            })
+        )
+        assert dd.data_type == DataType.STATISTICS
+        d = dd.data_as_dict()
+        assert d["result"]["significant"] is True
+        assert len(d["groups"]) == 2
+
+    def test_finding_datatype(self) -> None:
+        dd = (
+            DataDefBuilder.finding()
+            .trust_author("Audit System v3")
+            .bind_to_page(12)
+            .build({
+                "id": "F-2025-001",
+                "type": "major",
+                "title": "Incomplete supplier qualification",
+                "description": "7 of 12 critical suppliers lack current qualification records",
+                "standardReference": "ISO 9001:2015 §8.4.1",
+                "riskRating": "high",
+                "correctiveAction": "Complete supplier qualification by 2025-06-30",
+                "dueDate": "2025-06-30",
+                "responsibleParty": "Procurement Manager",
+                "status": "open",
+            })
+        )
+        assert dd.data_type == DataType.FINDING
+        d = dd.data_as_dict()
+        assert d["type"] == "major"
+        assert d["riskRating"] == "high"
+
+    def test_license_datatype(self) -> None:
+        dd = (
+            DataDefBuilder.license_()
+            .trust_author("Document Management System v2")
+            .build({
+                "spdxId": "Apache-2.0",
+                "name": "Apache License 2.0",
+                "url": "https://www.apache.org/licenses/LICENSE-2.0",
+                "licensor": "Link Genetic GmbH",
+                "scope": "software",
+                "permissions": ["reproduce", "distribute", "modify", "sublicense", "patent-use"],
+                "conditions": ["attribution", "notice"],
+                "limitations": ["no-warranty", "no-liability"],
+            })
+        )
+        assert dd.data_type == DataType.LICENSE
+        d = dd.data_as_dict()
+        assert d["spdxId"] == "Apache-2.0"
+        assert "patent-use" in d["permissions"]
+
+    def test_obligation_datatype(self) -> None:
+        dd = (
+            DataDefBuilder.obligation()
+            .trust_author("CLM System v1")
+            .bind_to_page(5)
+            .build({
+                "id": "OBL-001",
+                "type": "payment",
+                "obligor": "Acme AG",
+                "obligee": "Link Genetic GmbH",
+                "description": "Monthly SaaS subscription payment",
+                "recurring": True,
+                "recurrence": "RRULE:FREQ=MONTHLY;BYMONTHDAY=1",
+                "amount": {"value": 2500, "currency": "CHF", "basis": "per month"},
+                "governingLaw": "Swiss Code of Obligations",
+                "status": "active",
+                "clauseRef": "§4.2",
+            })
+        )
+        assert dd.data_type == DataType.OBLIGATION
+        d = dd.data_as_dict()
+        assert d["obligor"] == "Acme AG"
+        assert d["amount"]["currency"] == "CHF"
+
+    def test_material_datatype(self) -> None:
+        dd = (
+            DataDefBuilder.material()
+            .trust_author("ELN System v4")
+            .with_schema("https://schema.org/ChemicalSubstance")
+            .build({
+                "name": "Aspirin",
+                "iupacName": "2-acetoxybenzoic acid",
+                "casNumber": "50-78-2",
+                "molecularFormula": "C9H8O4",
+                "molecularWeight": 180.16,
+                "purity": "≥ 99.5%",
+                "grade": "Ph. Eur.",
+                "physicalState": "solid",
+                "ghsHazardClasses": ["Acute Tox. 4", "Eye Irrit. 2"],
+                "hStatements": ["H302", "H319"],
+                "pStatements": ["P260", "P264", "P270"],
+                "reachRegistered": True,
+                "svhc": False,
+                "storageConditions": "Store below 25°C, dry",
+            })
+        )
+        assert dd.data_type == DataType.MATERIAL
+        d = dd.data_as_dict()
+        assert d["casNumber"] == "50-78-2"
+        assert d["grade"] == "Ph. Eur."
+        assert "H302" in d["hStatements"]
+
 
 # ===========================================================================
 # LinkMeta Tests
 # ===========================================================================
-
 
 class TestLinkMeta:
     """Tests for LinkMeta model and builder (§3 of LinkMeta proposal)."""
@@ -338,7 +518,7 @@ class TestLinkMeta:
         lm = LinkMetaBuilder().build()
         assert lm.type == "LinkMeta"
         assert lm.version == 1
-        assert lm.ref_date is not None  # auto-stamped
+        assert lm.ref_date is not None
 
     def test_full_linkmeta(self, full_linkmeta: LinkMeta) -> None:
         assert full_linkmeta.has_persistent_id()
@@ -348,8 +528,6 @@ class TestLinkMeta:
 
     def test_capability_score_empty(self) -> None:
         lm = LinkMeta()
-        # No ref_date, no PID, no hash, no fallback, no status
-        # ref_date is auto-set by builder but not by direct construction
         assert lm.capability_score() <= 1
 
     def test_capability_score_partial(self) -> None:
@@ -410,7 +588,6 @@ class TestLinkMeta:
 # Validator Tests
 # ===========================================================================
 
-
 class TestDataDefValidator:
     """Tests for the DataDefValidator conformance rules (§8.2)."""
 
@@ -419,7 +596,6 @@ class TestDataDefValidator:
 
     def test_minimal_passes(self, minimal_datadef: DataDef) -> None:
         result = self.v.validate(minimal_datadef)
-        # Minimal has no binding → warning, but no error
         assert all(i.severity != Severity.ERROR for i in result.issues)
 
     def test_full_table_passes(self, full_table_datadef: DataDef) -> None:
@@ -428,16 +604,13 @@ class TestDataDefValidator:
         assert len(result.errors) == 0
 
     def test_enriched_without_confidence_fails(self) -> None:
-        # Pydantic catches this at model level, but test the validator path
         dd = DataDefBuilder.table().trust_enriched("App", confidence=0.8).build({"rows": []})
-        # Manually clear confidence to test DD-008
         dd_bad = dd.model_copy(update={"confidence": None})
         result = self.v.validate(dd_bad)
         errors = [i for i in result.issues if i.rule_id == "DD-008"]
         assert len(errors) > 0
 
     def test_custom_without_schema_fails(self) -> None:
-        # Build a CUSTOM DataDef with schema (valid), then strip the schema to test rule DD-010
         dd = DataDefBuilder.custom("https://example.com/schema").build({})
         dd_no_schema = dd.model_copy(update={"schema_uri": None})
         result = self.v.validate(dd_no_schema)
@@ -542,7 +715,6 @@ class TestLinkMetaValidator:
 # PDF Round-Trip Tests (require pikepdf)
 # ===========================================================================
 
-
 class TestPDFRoundTrip:
     """Tests for writing and reading DataDefs in actual PDF files."""
 
@@ -553,84 +725,65 @@ class TestPDFRoundTrip:
 
     def test_write_and_read_minimal(self, tmp_pdf: Path) -> None:
         dd = DataDefBuilder.value().build({"metric": "revenue", "value": 4200000})
-
         with SDLWriter() as writer:
             writer.add_datadef(dd)
             writer.save(tmp_pdf)
-
         with SDLReader(tmp_pdf) as reader:
             found = reader.find_datadefs()
-
-        assert len(found) == 1
-        assert found[0].data_type == DataType.VALUE
+            assert len(found) == 1
+            assert found[0].data_type == DataType.VALUE
 
     def test_write_and_read_full_table(self, tmp_pdf: Path, full_table_datadef: DataDef) -> None:
         with SDLWriter() as writer:
             writer.add_datadef(full_table_datadef, page=1)
             writer.save(tmp_pdf)
-
         with SDLReader(tmp_pdf) as reader:
             found = reader.find_datadefs()
             summary = reader.summary()
-
-        assert len(found) >= 1
-        assert summary["datadef_count"] >= 1
-        assert "Table" in summary["datatype_breakdown"]
+            assert len(found) >= 1
+            assert summary["datadef_count"] >= 1
+            assert "Table" in summary["datatype_breakdown"]
 
     def test_write_multiple_datadefs(self, tmp_pdf: Path) -> None:
         dd1 = DataDefBuilder.table().build({"rows": []})
         dd2 = DataDefBuilder.value().build({"value": 42})
         dd3 = DataDefBuilder.link().trust_author("App").build({"uri": "https://example.com"})
-
         with SDLWriter() as writer:
             writer.add_datadef(dd1)
             writer.add_datadef(dd2)
             writer.add_datadef(dd3)
             writer.save(tmp_pdf)
-
         with SDLReader(tmp_pdf) as reader:
             found = reader.find_datadefs()
-
-        assert len(found) == 3
+            assert len(found) == 3
 
     def test_read_from_existing_pdf_no_sdl(self) -> None:
-        """Reading a PDF with no SDL should return empty lists without error."""
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
             tmp = Path(f.name)
-
         with SDLWriter() as writer:
-            writer.save(tmp)  # Empty PDF with no DataDefs
-
+            writer.save(tmp)
         with SDLReader(tmp) as reader:
-            # Catalog DataDefs will be empty
             count = reader.get_datadef_count()
-
-        # Should not raise, count may be 0
-        assert isinstance(count, int)
+            assert isinstance(count, int)
 
     def test_datadef_catalog_registration(self, tmp_pdf: Path) -> None:
         dd = DataDefBuilder.table().build({"rows": []})
-
         with SDLWriter() as writer:
             writer.add_datadef(dd, add_to_catalog=True)
             writer.save(tmp_pdf)
-
         with SDLReader(tmp_pdf) as reader:
             count = reader.get_datadef_count()
-
-        assert count >= 1
+            assert count >= 1
 
     def test_enriched_datadef_round_trip(self, tmp_pdf: Path, enriched_datadef: DataDef) -> None:
         with SDLWriter() as writer:
             writer.add_datadef(enriched_datadef)
             writer.save(tmp_pdf)
-
         with SDLReader(tmp_pdf) as reader:
             found = reader.find_datadefs()
-
-        assert len(found) >= 1
-        found_dd = found[0]
-        assert found_dd.data_type == DataType.TABLE
+            assert len(found) >= 1
+            found_dd = found[0]
+            assert found_dd.data_type == DataType.TABLE
 
     def test_json_data_preserved(self, tmp_pdf: Path) -> None:
         original_data = {
@@ -639,45 +792,36 @@ class TestPDFRoundTrip:
             "rows": [{"label": "Revenue", "value": 4200000}],
         }
         dd = DataDefBuilder.table().build(original_data)
-
         with SDLWriter() as writer:
             writer.add_datadef(dd)
             writer.save(tmp_pdf)
-
         with SDLReader(tmp_pdf) as reader:
             found = reader.find_datadefs()
-
-        assert len(found) >= 1
-        parsed = found[0].data_as_dict()
-        assert parsed["period"] == "FY2024"
-        assert parsed["rows"][0]["value"] == 4200000
+            assert len(found) >= 1
+            parsed = found[0].data_as_dict()
+            assert parsed["period"] == "FY2024"
+            assert parsed["rows"][0]["value"] == 4200000
 
     def test_summary_output(self, tmp_pdf: Path) -> None:
         dd1 = DataDefBuilder.table().build({"rows": []})
         dd2 = DataDefBuilder.provenance().build({"contentOrigin": "ai-generated"})
-
         with SDLWriter() as writer:
             writer.add_datadef(dd1)
             writer.add_datadef(dd2)
             writer.save(tmp_pdf)
-
         with SDLReader(tmp_pdf) as reader:
             summary = reader.summary()
-
-        assert summary["datadef_count"] == 2
-        assert "Table" in summary["datatype_breakdown"]
-        assert "Provenance" in summary["datatype_breakdown"]
+            assert summary["datadef_count"] == 2
+            assert "Table" in summary["datatype_breakdown"]
+            assert "Provenance" in summary["datatype_breakdown"]
 
 
 # ===========================================================================
 # Spec Compliance Tests (§10 Test Suite Outline)
 # ===========================================================================
 
-
 class TestSpecComplianceOutline:
-    """
-    Covers the conformance test suite outline from §10 of the specification.
-    """
+    """Covers the conformance test suite outline from §10 of the specification."""
 
     def test_minimal_datadef_valid(self) -> None:
         """§10: Minimal DataDef – Valid minimal object."""
@@ -693,7 +837,7 @@ class TestSpecComplianceOutline:
     def test_missing_required_key_fails(self) -> None:
         """§10: Minimal DataDef – Missing required keys."""
         with pytest.raises(Exception):
-            DataDef(format=DataFormat.JSON, data="{}")  # type: ignore[call-arg]
+            DataDef(format=DataFormat.JSON, data="{}") # type: ignore[call-arg]
 
     def test_invalid_datatype_falls_back(self) -> None:
         """§10: Minimal DataDef – Custom DataType without schema triggers DD-010."""
@@ -702,7 +846,7 @@ class TestSpecComplianceOutline:
         v = DataDefValidator()
         r = v.validate(dd_no_schema)
         dd010 = [i for i in r.issues if i.rule_id == "DD-010"]
-        assert len(dd010) > 0  # Custom without schema
+        assert len(dd010) > 0
 
     def test_json_format_valid(self) -> None:
         """§10: Data formats – Valid JSON."""
@@ -733,7 +877,6 @@ class TestSpecComplianceOutline:
             trust_level=TrustLevel.SIGNED,
         )
         assert dd_signed.trust_level == TrustLevel.SIGNED
-
         dd_enriched = DataDefBuilder.table().trust_enriched("App", 0.75).build({"rows": []})
         assert dd_enriched.trust_level == TrustLevel.ENRICHED
         assert dd_enriched.confidence == 0.75
@@ -799,6 +942,92 @@ class TestSpecComplianceOutline:
             "standard": "ISO 2768-1:1989",
         })
         assert dd.data_type == DataType.MEASUREMENT
+
+    def test_process_datatype_compliance(self) -> None:
+        """§10: Process DataType – BPMN workflow."""
+        dd = DataDefBuilder.process().trust_author("BPM Tool v1").build({
+            "notation": "BPMN 2.0",
+            "title": "Drug Approval SOP",
+            "regulatoryReferences": ["FDA 21 CFR Part 11", "ICH Q10"],
+            "steps": [
+                {"id": "s1", "type": "startEvent", "label": "Submission received"},
+                {"id": "s2", "type": "task", "label": "Clinical review", "actor": "Medical Affairs"},
+                {"id": "s3", "type": "endEvent", "label": "Decision issued"},
+            ],
+            "flows": [{"from": "s1", "to": "s2"}, {"from": "s2", "to": "s3"}],
+        })
+        assert dd.data_type == DataType.PROCESS
+        d = dd.data_as_dict()
+        assert "FDA 21 CFR Part 11" in d["regulatoryReferences"]
+
+    def test_risk_datatype_compliance(self) -> None:
+        """§10: Risk DataType – ISO 31000 risk register."""
+        dd = DataDefBuilder.risk().trust_author("GRC System v2").build({
+            "framework": "ISO 31000:2018",
+            "risks": [{
+                "id": "R-001", "category": "Compliance",
+                "description": "GDPR data breach risk",
+                "likelihood": 2, "impact": 5, "inherentRisk": 10,
+                "residualRisk": 3, "status": "mitigated",
+            }],
+        })
+        assert dd.data_type == DataType.RISK
+
+    def test_statistics_datatype_compliance(self) -> None:
+        """§10: Statistics DataType – CDISC clinical trial result."""
+        dd = DataDefBuilder.statistics().trust_author("SAS 9.4").build({
+            "analysis": "ANCOVA",
+            "software": "SAS 9.4",
+            "reportingStandard": "CDISC ADaM",
+            "groups": [{"name": "Treatment", "n": 120, "mean": 5.2, "sd": 1.1}],
+            "result": {"statistic": 4.12, "pValue": 0.0001, "significant": True},
+        })
+        assert dd.data_type == DataType.STATISTICS
+
+    def test_finding_datatype_compliance(self) -> None:
+        """§10: Finding DataType – GCP audit finding."""
+        dd = DataDefBuilder.finding().trust_author("QMS v3").build({
+            "id": "F-GCP-001", "type": "critical",
+            "description": "Informed consent not obtained prior to screening",
+            "standardReference": "ICH E6(R2) §4.8.2",
+            "riskRating": "high", "status": "open",
+        })
+        assert dd.data_type == DataType.FINDING
+
+    def test_license_datatype_compliance(self) -> None:
+        """§10: License DataType – SPDX identifier."""
+        dd = DataDefBuilder.license_().trust_author("DMS v1").build({
+            "spdxId": "MIT",
+            "name": "MIT License",
+            "permissions": ["reproduce", "distribute", "modify", "sublicense", "commercial"],
+        })
+        assert dd.data_type == DataType.LICENSE
+        d = dd.data_as_dict()
+        assert d["spdxId"] == "MIT"
+
+    def test_obligation_datatype_compliance(self) -> None:
+        """§10: Obligation DataType – contractual commitment."""
+        dd = DataDefBuilder.obligation().trust_author("CLM v2").build({
+            "id": "OBL-NDA-001", "type": "confidentiality",
+            "obligor": "Counterparty AG",
+            "description": "Five-year confidentiality obligation",
+            "governing_law": "Swiss Code of Obligations",
+            "status": "active",
+        })
+        assert dd.data_type == DataType.OBLIGATION
+
+    def test_material_datatype_compliance(self) -> None:
+        """§10: Material DataType – pharmaceutical substance."""
+        dd = DataDefBuilder.material().trust_author("ELN v2").build({
+            "name": "Paracetamol",
+            "casNumber": "103-90-2",
+            "grade": "Ph. Eur.",
+            "ghsHazardClasses": ["Acute Tox. 4"],
+            "reachRegistered": True,
+        })
+        assert dd.data_type == DataType.MATERIAL
+        d = dd.data_as_dict()
+        assert d["casNumber"] == "103-90-2"
 
 
 # ===========================================================================
