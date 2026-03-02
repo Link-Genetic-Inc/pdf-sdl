@@ -2,6 +2,25 @@
 
 All notable changes to pdf-sdl will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **7 new DataTypes** (SDL Technical Specification v1.4.0):
+  - `/Process` – BPMN 2.0 workflows, SOPs, clinical pathways (ISO 9001, FDA 21 CFR Part 11)
+  - `/Risk` – Risk registers per ISO 31000:2018 / COSO ERM / Basel III (likelihood, impact, controls)
+  - `/Statistics` – Statistical analyses with reproducibility support (CDISC, APA, OSF pre-registration)
+  - `/Finding` – Audit and inspection findings (GAAS, PCAOB, ISAE 3000, ICH E6 GCP)
+  - `/License` – Rights management with SPDX identifiers (Creative Commons, open data)
+  - `/Obligation` – Contract obligations with CLM semantics (FIBO, Swiss Code of Obligations)
+  - `/Material` – Chemical substance data (GHS/CLP, REACH, CAS, Ph. Eur., USP)
+- Pydantic models for all 7 new DataTypes: `ProcessData`, `RiskData`, `StatisticsData`,
+  `FindingData`, `LicenseData`, `ObligationData`, `MaterialData`
+- Builder factory methods: `process()`, `risk()`, `statistics()`, `finding()`,
+  `license_()`, `obligation()`, `material()`
+- Updated `__spec_version__` to `"SDL Technical Specification v1.4.0"`
+
+---
+
 ## [0.1.0] – February 2026
 
 ### Added
@@ -18,7 +37,7 @@ All notable changes to pdf-sdl will be documented in this file.
 - **Issue #725 support**: `/DataType /Link` with persistent IDs, hash integrity, fallback URIs
 - **EU AI Act support**: `/DataType /Provenance` with AI model metadata
 - **LinkID support**: `linkid:` URI scheme (IANA provisional, October 2025)
-- Comprehensive test suite (50+ tests across all modules)
+- Comprehensive test suite (68 tests across all modules)
 - Three complete usage examples
 
 ### Specification
