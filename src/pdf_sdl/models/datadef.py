@@ -2,10 +2,10 @@
 DataDef Dictionary – Core Model
 ================================
 Formal Python representation of the DataDef dictionary as specified in
-SDL Technical Specification v1.2.0 (§3).
+SDL Technical Specification v1.4.0 (§3).
 
 This module defines the Pydantic models for DataDef objects, their entries,
-and the full type system (§4).
+and the full type system (§4), now covering 25 standard DataTypes.
 """
 
 from __future__ import annotations
@@ -22,7 +22,6 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 # Enumerations (§3.2, §4.1, §6.1)
 # ---------------------------------------------------------------------------
 
-
 class DataFormat(str, Enum):
     """Serialization format for the DataDef data stream (§3.2 /Format)."""
     JSON = "JSON"
@@ -35,6 +34,7 @@ class DataType(str, Enum):
     """
     Standard DataType values (§4.1).
     Classifies the semantic category of the structured data.
+    25 standard types as of SDL Technical Specification v1.4.0.
     """
     # Data extraction
     TABLE = "Table"
@@ -57,6 +57,15 @@ class DataType(str, Enum):
     PROVENANCE = "Provenance"
     IDENTITY = "Identity"
     TRANSLATION = "Translation"
+    # Process & risk (new in v1.4.0)
+    PROCESS = "Process"
+    RISK = "Risk"
+    STATISTICS = "Statistics"
+    FINDING = "Finding"
+    # Legal & materials (new in v1.4.0)
+    LICENSE = "License"
+    OBLIGATION = "Obligation"
+    MATERIAL = "Material"
     # Extensible
     CUSTOM = "Custom"
 
@@ -83,9 +92,8 @@ class ConformanceLevel(str, Enum):
 
 
 # ---------------------------------------------------------------------------
-# Sub-models
+# Shared sub-models
 # ---------------------------------------------------------------------------
-
 
 class HashValue(BaseModel):
     """Content hash of a target resource (used in LinkMeta and /Link DataType)."""
@@ -99,16 +107,17 @@ class HashValue(BaseModel):
     value: str = Field(..., description="Hex-encoded hash value")
 
 
+# ---------------------------------------------------------------------------
+# Sub-models – original 18 DataTypes
+# ---------------------------------------------------------------------------
+
 class LinkData(BaseModel):
-    """
-    JSON data stream schema for /DataType /Link (§4.2.1).
-    Addresses Issue #725 – Internet-Aware Content Representation.
-    """
+    """JSON data stream schema for /DataType /Link (§4.2.1). Issue #725."""
     model_config = ConfigDict(populate_by_name=True)
 
     uri: str = Field(..., description="The target URI (same as the URI Action)")
     pid: str | None = Field(None, description="Persistent Identifier (DOI, ARK, Handle, URN)")
-    link_id: str | None = Field(None, alias="linkId", description="LinkID persistent identifier (linkid: URI scheme)")
+    link_id: str | None = Field(None, alias="linkId", description="LinkID persistent identifier")
     title: str | None = Field(None, description="Title of the referenced resource")
     description: str | None = Field(None, description="Purpose of the reference")
     language: str | None = Field(None, description="Language of target (BCP 47)")
@@ -176,8 +185,7 @@ class IdentityData(BaseModel):
 class ClassificationData(BaseModel):
     """Data stream schema for /DataType /Classification (§4.7)."""
     confidentiality: str | None = Field(
-        None,
-        description="public | internal | confidential | restricted | top-secret",
+        None, description="public | internal | confidential | restricted | top-secret"
     )
     retention_years: int | None = Field(None, alias="retentionYears")
     retention_basis: str | None = Field(None, alias="retentionBasis")
@@ -194,8 +202,7 @@ class ProvenanceData(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     content_origin: str = Field(
-        ...,
-        alias="contentOrigin",
+        ..., alias="contentOrigin",
         description="human-authored | ai-generated | ai-assisted | translated | compiled",
     )
     model: str | None = None
@@ -218,8 +225,7 @@ class TranslationData(BaseModel):
     original_language: str = Field(..., alias="originalLanguage", description="BCP 47")
     translated_language: str = Field(..., alias="translatedLanguage", description="BCP 47")
     translation_method: str = Field(
-        ...,
-        alias="translationMethod",
+        ..., alias="translationMethod",
         description="human-professional | human-non-professional | machine | machine-post-edited | ai-assisted",
     )
     translator: str | None = None
@@ -251,9 +257,283 @@ class MeasurementData(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Core DataDef Model
+# Sub-models – new DataTypes in v1.4.0
 # ---------------------------------------------------------------------------
 
+class ProcessStep(BaseModel):
+    """A single step or node in a /DataType /Process stream."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str = Field(..., description="Unique step identifier")
+    type: str = Field(..., description="startEvent | endEvent | task | gateway | subprocess | annotation")
+    label: str = Field(..., description="Human-readable step name")
+    actor: str | None = Field(None, description="Responsible party or role")
+    duration: str | None = Field(None, description="ISO 8601 duration (e.g. PT4H)")
+    systems: list[str] = Field(default_factory=list, description="Supporting IT systems")
+    references: list[str] = Field(default_factory=list, description="Regulatory or policy references")
+
+
+class ProcessData(BaseModel):
+    """
+    Data stream schema for /DataType /Process.
+    Captures BPMN 2.0 workflows, SOPs, clinical pathways, and other
+    process descriptions embedded in PDF documents.
+    Applicable standards: ISO 9001, BPMN 2.0, FDA 21 CFR Part 11,
+    ICH Q10, HL7 FHIR Workflow, TOGAF.
+    """
+    model_config = ConfigDict(populate_by_name=True)
+
+    notation: str | None = Field(None, description="BPMN 2.0 | UML Activity | Flowchart | SIPOC | VSM")
+    title: str | None = Field(None, description="Process name")
+    version: str | None = Field(None, description="Process version")
+    owner: str | None = Field(None, description="Process owner or responsible department")
+    scope: str | None = Field(None, description="Process scope description")
+    regulatory_references: list[str] = Field(
+        default_factory=list, alias="regulatoryReferences",
+        description="Applicable regulations or standards"
+    )
+    steps: list[ProcessStep] = Field(default_factory=list, description="Process steps / nodes")
+    flows: list[dict[str, str]] = Field(
+        default_factory=list,
+        description="Sequence flows: [{from: id, to: id, condition?: str}]"
+    )
+    kpis: list[dict[str, Any]] = Field(default_factory=list, description="Process KPIs")
+
+
+class RiskEntry(BaseModel):
+    """A single risk in a /DataType /Risk stream."""
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str = Field(..., description="Risk identifier (e.g. R-001)")
+    category: str = Field(..., description="Strategic | Operational | Financial | Compliance | Reputational")
+    description: str = Field(..., description="Risk description")
+    likelihood: int | None = Field(None, ge=1, le=5, description="Likelihood score 1–5")
+    impact: int | None = Field(None, ge=1, le=5, description="Impact score 1–5")
+    inherent_risk: int | None = Field(None, alias="inherentRisk", description="Likelihood × Impact")
+    controls: list[str] = Field(default_factory=list, description="Existing controls")
+    residual_risk: int | None = Field(None, alias="residualRisk", description="Risk after controls")
+    owner: str | None = Field(None, description="Risk owner")
+    status: str | None = Field(None, description="open | mitigated | accepted | closed")
+    review_date: str | None = Field(None, alias="reviewDate", description="ISO 8601")
+
+
+class RiskData(BaseModel):
+    """
+    Data stream schema for /DataType /Risk.
+    Captures risk registers and assessments embedded in PDF documents.
+    Applicable standards: ISO 31000:2018, COSO ERM, Basel III/IV,
+    Solvency II, NIST SP 800-30, ICH Q9.
+    """
+    model_config = ConfigDict(populate_by_name=True)
+
+    framework: str | None = Field(
+        None, description="ISO 31000:2018 | COSO ERM | Basel III | Solvency II | NIST SP 800-30"
+    )
+    assessment_date: str | None = Field(None, alias="assessmentDate", description="ISO 8601")
+    assessment_scope: str | None = Field(None, alias="assessmentScope")
+    likelihood_scale: str | None = Field(
+        None, alias="likelihoodScale", description="Description of likelihood scoring scale"
+    )
+    impact_scale: str | None = Field(
+        None, alias="impactScale", description="Description of impact scoring scale"
+    )
+    risks: list[RiskEntry] = Field(default_factory=list)
+    overall_risk_rating: str | None = Field(None, alias="overallRiskRating")
+    approved_by: str | None = Field(None, alias="approvedBy")
+
+
+class StatisticsGroup(BaseModel):
+    """A single group or cohort in a /DataType /Statistics stream."""
+    name: str
+    n: int | None = Field(None, description="Sample size")
+    mean: float | None = None
+    sd: float | None = Field(None, description="Standard deviation")
+    median: float | None = None
+    min: float | None = None
+    max: float | None = None
+    ci_lower: float | None = Field(None, alias="ciLower", description="Confidence interval lower bound")
+    ci_upper: float | None = Field(None, alias="ciUpper", description="Confidence interval upper bound")
+
+
+class StatisticsData(BaseModel):
+    """
+    Data stream schema for /DataType /Statistics.
+    Captures statistical analyses, clinical trial results, and quantitative
+    research outputs embedded in PDF documents.
+    Applicable standards: CDISC (SDTM, ADaM, DEFINE-XML), APA 7th edition,
+    OSF pre-registration, CONSORT, PRISMA, STROBE.
+    """
+    model_config = ConfigDict(populate_by_name=True)
+
+    analysis: str | None = Field(None, description="Statistical test or analysis type")
+    software: str | None = Field(None, description="Statistical software (e.g. R 4.3, SAS 9.4, SPSS 29)")
+    preregistered: bool | None = Field(None, description="Whether analysis was pre-registered")
+    preregistration_url: str | None = Field(None, alias="preregistrationUrl")
+    reporting_standard: str | None = Field(
+        None, alias="reportingStandard", description="CONSORT | PRISMA | STROBE | CDISC | APA"
+    )
+    groups: list[StatisticsGroup] = Field(default_factory=list)
+    result: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Test statistic, p-value, effect size, confidence interval"
+    )
+    variables: list[dict[str, Any]] = Field(
+        default_factory=list, description="Variable definitions with roles and units"
+    )
+
+
+class FindingData(BaseModel):
+    """
+    Data stream schema for /DataType /Finding.
+    Captures audit and inspection findings, non-conformances, and
+    observations embedded in PDF reports.
+    Applicable standards: GAAS, PCAOB AS 2201, ISAE 3000, ISO 19011,
+    ICH E6(R2) GCP, FDA 21 CFR Part 820, SOC 2.
+    """
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str | None = Field(None, description="Finding identifier (e.g. F-2025-001)")
+    type: str | None = Field(
+        None, description="critical | major | minor | observation | opportunity"
+    )
+    title: str | None = Field(None)
+    description: str | None = Field(None)
+    standard_reference: str | None = Field(
+        None, alias="standardReference",
+        description="Applicable standard clause (e.g. ISO 9001:2015 §8.4.1)"
+    )
+    audited_process: str | None = Field(None, alias="auditedProcess")
+    evidence: list[str] = Field(default_factory=list, description="Supporting evidence references")
+    risk_rating: str | None = Field(None, alias="riskRating", description="high | medium | low")
+    corrective_action: str | None = Field(None, alias="correctiveAction")
+    due_date: str | None = Field(None, alias="dueDate", description="ISO 8601")
+    responsible_party: str | None = Field(None, alias="responsibleParty")
+    status: str | None = Field(None, description="open | in-progress | closed | verified")
+    closed_date: str | None = Field(None, alias="closedDate", description="ISO 8601")
+    audit_id: str | None = Field(None, alias="auditId", description="Parent audit or inspection ID")
+
+
+class LicenseData(BaseModel):
+    """
+    Data stream schema for /DataType /License.
+    Captures rights management, software licensing, and data licensing
+    information embedded in PDF documents.
+    Applicable standards: SPDX 2.3, Creative Commons, Open Data Commons,
+    FRAND licensing, EUPL.
+    """
+    model_config = ConfigDict(populate_by_name=True)
+
+    spdx_id: str | None = Field(
+        None, alias="spdxId", description="SPDX license identifier (e.g. Apache-2.0, CC-BY-4.0)"
+    )
+    name: str | None = Field(None, description="Full license name")
+    url: str | None = Field(None, description="License text URL")
+    licensor: str | None = Field(None, description="Rights holder")
+    licensee: str | None = Field(None, description="Rights recipient (omit for public licenses)")
+    scope: str | None = Field(
+        None, description="software | data | content | patent | trademark | database"
+    )
+    effective_date: str | None = Field(None, alias="effectiveDate", description="ISO 8601")
+    expiry_date: str | None = Field(None, alias="expiryDate", description="ISO 8601")
+    jurisdiction: str | None = Field(None, description="Governing jurisdiction (ISO 3166)")
+    permissions: list[str] = Field(
+        default_factory=list,
+        description="Permitted uses: reproduce | distribute | modify | sublicense | commercial | patent-use"
+    )
+    conditions: list[str] = Field(
+        default_factory=list,
+        description="Conditions: attribution | share-alike | copyleft | notice | source-disclosure"
+    )
+    limitations: list[str] = Field(
+        default_factory=list,
+        description="Limitations: no-warranty | no-liability | no-trademark"
+    )
+    royalty: dict[str, Any] | None = Field(
+        None, description="Royalty terms: {rate, basis, currency, frand: bool}"
+    )
+
+
+class ObligationData(BaseModel):
+    """
+    Data stream schema for /DataType /Obligation.
+    Captures contractual obligations, covenants, and legal commitments
+    embedded in PDF documents.
+    Applicable standards: FIBO (Financial Industry Business Ontology),
+    LKIF (Legal Knowledge Interchange Format), LegalRuleML,
+    Swiss Code of Obligations, UNIDROIT PICC.
+    """
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str | None = Field(None, description="Obligation identifier (e.g. OBL-001)")
+    type: str | None = Field(
+        None,
+        description="payment | delivery | confidentiality | non-compete | reporting | indemnification | warranty"
+    )
+    obligor: str | None = Field(None, description="Party bearing the obligation")
+    obligee: str | None = Field(None, description="Party to whom the obligation is owed")
+    description: str | None = Field(None, description="Obligation text or summary")
+    due_date: str | None = Field(None, alias="dueDate", description="ISO 8601 due date")
+    recurring: bool | None = Field(None, description="Whether the obligation recurs")
+    recurrence: str | None = Field(None, description="ISO 8601 recurrence rule (RRULE) or natural language")
+    amount: dict[str, Any] | None = Field(
+        None, description="Monetary amount: {value: number, currency: str, basis: str}"
+    )
+    condition: str | None = Field(None, description="Triggering condition (if conditional obligation)")
+    governing_law: str | None = Field(None, alias="governingLaw", description="Governing legal system")
+    status: str | None = Field(None, description="pending | active | fulfilled | breached | waived")
+    clause_ref: str | None = Field(
+        None, alias="clauseRef", description="Contract clause reference (e.g. §4.2)"
+    )
+
+
+class MaterialData(BaseModel):
+    """
+    Data stream schema for /DataType /Material.
+    Captures chemical substance data, material specifications, and
+    safety information embedded in PDF documents.
+    Applicable standards: GHS (UN Globally Harmonized System), EU CLP Regulation,
+    REACH (EC 1907/2006), Ph. Eur. (European Pharmacopoeia), USP,
+    CAS Registry, ISO 10993, ASTM.
+    """
+    model_config = ConfigDict(populate_by_name=True)
+
+    name: str | None = Field(None, description="Substance or material name")
+    iupac_name: str | None = Field(None, alias="iupacName", description="IUPAC systematic name")
+    cas_number: str | None = Field(None, alias="casNumber", description="CAS Registry Number")
+    ec_number: str | None = Field(None, alias="ecNumber", description="EC (EINECS/ELINCS) number")
+    inchi: str | None = Field(None, description="IUPAC International Chemical Identifier")
+    smiles: str | None = Field(None, description="SMILES notation")
+    molecular_formula: str | None = Field(None, alias="molecularFormula")
+    molecular_weight: float | None = Field(None, alias="molecularWeight", description="g/mol")
+    purity: str | None = Field(None, description="Purity specification (e.g. ≥ 99.5%)")
+    grade: str | None = Field(
+        None, description="Ph. Eur. | USP | NF | ACS | HPLC | Technical | Food"
+    )
+    physical_state: str | None = Field(
+        None, alias="physicalState", description="solid | liquid | gas | plasma"
+    )
+    ghs_hazard_classes: list[str] = Field(
+        default_factory=list, alias="ghsHazardClasses",
+        description="GHS hazard classification codes (e.g. Flam. Liq. 2, Skin Irrit. 2)"
+    )
+    h_statements: list[str] = Field(
+        default_factory=list, alias="hStatements",
+        description="GHS Hazard statements (e.g. H225, H315)"
+    )
+    p_statements: list[str] = Field(
+        default_factory=list, alias="pStatements",
+        description="GHS Precautionary statements (e.g. P210, P264)"
+    )
+    reach_registered: bool | None = Field(None, alias="reachRegistered")
+    svhc: bool | None = Field(None, description="Substance of Very High Concern (REACH SVHC list)")
+    storage_conditions: str | None = Field(None, alias="storageConditions")
+    shelf_life: str | None = Field(None, alias="shelfLife", description="ISO 8601 duration or text")
+    sds_url: str | None = Field(None, alias="sdsUrl", description="Safety Data Sheet URL")
+
+
+# ---------------------------------------------------------------------------
+# Core DataDef Model
+# ---------------------------------------------------------------------------
 
 class DataDef(BaseModel):
     """
@@ -353,10 +633,7 @@ class DataDef(BaseModel):
         return ConformanceLevel.BASIC
 
     def to_pdf_dict(self) -> dict[str, Any]:
-        """
-        Serialize to a flat dict suitable for conversion to PDF dictionary entries.
-        Uses PDF name convention (forward slash prefix implied).
-        """
+        """Serialize to a flat dict suitable for PDF dictionary entries."""
         d: dict[str, Any] = {
             "Type": "DataDef",
             "Version": self.version,
