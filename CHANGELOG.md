@@ -2,7 +2,7 @@
 
 All notable changes to pdf-sdl will be documented in this file.
 
-## [Unreleased]
+## [0.2.0] – March 2026
 
 ### Added
 - **7 new DataTypes** (SDL Technical Specification v1.4.0):

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pdf-sdl"
-version = "0.1.0"
+version = "0.2.0"
 description = "Semantic Data Layer for PDF – Python reference implementation of ISO 32000-2 DataDef extension"
 readme = "README.md"
 license = { file = "LICENSE" }

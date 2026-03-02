@@ -2,7 +2,7 @@
 
 **Semantic Data Layer (SDL) for PDF** – Python reference implementation of the DataDef dictionary extension to ISO 32000-2.
 
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/) [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-0.1.0-orange.svg)](https://github.com/Link-Genetic-Inc/pdf-sdl/releases) [![Tests](https://img.shields.io/badge/tests-82%20passing-brightgreen.svg)](tests/) [![PDF Association](https://img.shields.io/badge/PDF%20Association-Issue%20%23725-blue.svg)](https://github.com/pdf-association/pdf-issues/issues/725)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/) [![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-0.2.0-orange.svg)](https://github.com/Link-Genetic-Inc/pdf-sdl/releases) [![Tests](https://img.shields.io/badge/tests-82%20passing-brightgreen.svg)](tests/) [![PDF Association](https://img.shields.io/badge/PDF%20Association-Issue%20%23725-blue.svg)](https://github.com/pdf-association/pdf-issues/issues/725)
 
 Addresses [Issue #725](https://github.com/pdf-association/pdf-issues/issues/725) – *Lack of Internet-Aware Content Representation in PDF* – submitted to the PDF Association Technical Working Group / ISO TC 171 SC 2.
 

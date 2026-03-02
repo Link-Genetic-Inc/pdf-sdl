@@ -108,7 +108,7 @@ class HashValue(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Sub-models – original 18 DataTypes
+# Sub-models – 25 DataTypes (SDL Technical Specification v1.4.0)
 # ---------------------------------------------------------------------------
 
 class LinkData(BaseModel):
@@ -257,7 +257,7 @@ class MeasurementData(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Sub-models – new DataTypes in v1.4.0
+# Sub-models – additional DataTypes
 # ---------------------------------------------------------------------------
 
 class ProcessStep(BaseModel):

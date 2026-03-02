@@ -58,7 +58,7 @@ class DataDefBuilder:
         self._status_uri: str | None = None
 
     # ------------------------------------------------------------------
-    # Factory methods – original 18 DataTypes
+    # Factory methods – 25 DataTypes (SDL Technical Specification v1.4.0)
     # ------------------------------------------------------------------
 
     @classmethod
@@ -147,7 +147,7 @@ class DataDefBuilder:
         return cls(DataType.TRANSLATION, DataFormat.JSON)
 
     # ------------------------------------------------------------------
-    # Factory methods – new DataTypes in v1.4.0
+    # Factory methods – additional DataTypes
     # ------------------------------------------------------------------
 
     @classmethod
