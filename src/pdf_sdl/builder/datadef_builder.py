@@ -1,9 +1,8 @@
 """
 DataDef Builder
-================
+===============
 Fluent builder API for constructing DataDef objects.
-
-Provides factory methods for all 18 standard DataTypes and a chainable
+Provides factory methods for all 25 standard DataTypes and a chainable
 builder for the common DataDef entries.
 
 Example::
@@ -13,7 +12,7 @@ Example::
     datadef = (
         DataDefBuilder.table()
         .with_source("SAP S/4HANA, Q4 2024")
-        .with_schema("https://schema.org/FinancialStatement")
+        .with_schema("https://schema.org/FinancialStatement", version="2024")
         .trust_author(generator="Acme Report Builder v3.2")
         .bind_to_struct("35 0 R")
         .build({"period": "FY2024", "rows": [...]})
@@ -37,8 +36,8 @@ from ..models.datadef import (
 class DataDefBuilder:
     """
     Fluent builder for DataDef objects.
-
-    Typically instantiated via the factory class methods (e.g. DataDefBuilder.table()).
+    Typically instantiated via the factory class methods
+    (e.g. DataDefBuilder.table()).
     """
 
     def __init__(self, data_type: DataType, format: DataFormat = DataFormat.JSON) -> None:
@@ -59,7 +58,7 @@ class DataDefBuilder:
         self._status_uri: str | None = None
 
     # ------------------------------------------------------------------
-    # Factory methods for all 18 DataTypes
+    # Factory methods – original 18 DataTypes
     # ------------------------------------------------------------------
 
     @classmethod
@@ -94,10 +93,7 @@ class DataDefBuilder:
 
     @classmethod
     def link(cls) -> "DataDefBuilder":
-        """
-        Internet reference with metadata (Issue #725).
-        Use LinkMetaBuilder for standalone LinkMeta dictionaries.
-        """
+        """Internet reference with metadata (Issue #725)."""
         return cls(DataType.LINK, DataFormat.JSON)
 
     @classmethod
@@ -150,6 +146,67 @@ class DataDefBuilder:
         """Translation metadata and source binding."""
         return cls(DataType.TRANSLATION, DataFormat.JSON)
 
+    # ------------------------------------------------------------------
+    # Factory methods – new DataTypes in v1.4.0
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def process(cls) -> "DataDefBuilder":
+        """
+        Business process / workflow (BPMN 2.0, SOP, clinical pathway).
+        Applicable: ISO 9001, FDA 21 CFR Part 11, ICH Q10, TOGAF.
+        """
+        return cls(DataType.PROCESS, DataFormat.JSON)
+
+    @classmethod
+    def risk(cls) -> "DataDefBuilder":
+        """
+        Risk register / risk assessment.
+        Applicable: ISO 31000:2018, COSO ERM, Basel III/IV, Solvency II, ICH Q9.
+        """
+        return cls(DataType.RISK, DataFormat.JSON)
+
+    @classmethod
+    def statistics(cls) -> "DataDefBuilder":
+        """
+        Statistical analysis / clinical trial results.
+        Applicable: CDISC (SDTM, ADaM), APA 7th, OSF, CONSORT, PRISMA.
+        """
+        return cls(DataType.STATISTICS, DataFormat.JSON)
+
+    @classmethod
+    def finding(cls) -> "DataDefBuilder":
+        """
+        Audit / inspection finding or non-conformance.
+        Applicable: GAAS, PCAOB, ISAE 3000, ISO 19011, ICH E6(R2), SOC 2.
+        """
+        return cls(DataType.FINDING, DataFormat.JSON)
+
+    @classmethod
+    def license_(cls) -> "DataDefBuilder":
+        """
+        Rights / license information (SPDX, Creative Commons, open data).
+        Note: trailing underscore avoids shadowing the built-in `license`.
+        Applicable: SPDX 2.3, CC, Open Data Commons, EUPL, FRAND.
+        """
+        return cls(DataType.LICENSE, DataFormat.JSON)
+
+    @classmethod
+    def obligation(cls) -> "DataDefBuilder":
+        """
+        Contractual obligation or legal commitment.
+        Applicable: FIBO, LegalRuleML, Swiss Code of Obligations, UNIDROIT PICC.
+        """
+        return cls(DataType.OBLIGATION, DataFormat.JSON)
+
+    @classmethod
+    def material(cls) -> "DataDefBuilder":
+        """
+        Chemical substance / material specification.
+        Applicable: GHS/CLP, REACH, CAS Registry, Ph. Eur., USP, ISO 10993.
+        """
+        return cls(DataType.MATERIAL, DataFormat.JSON)
+
     @classmethod
     def custom(cls, schema_uri: str, format: DataFormat = DataFormat.JSON) -> "DataDefBuilder":
         """Domain-specific data. Requires schema_uri (§4.11)."""
@@ -186,22 +243,14 @@ class DataDefBuilder:
     # --- Trust levels (§6) ---
 
     def trust_signed(self) -> "DataDefBuilder":
-        """
-        Mark as Signed – DataDef is within digital signature scope.
-        Highest trust level; no additional keys required here.
-        """
+        """Mark as Signed – DataDef is within digital signature scope."""
         self._trust_level = TrustLevel.SIGNED
         return self
 
     def trust_author(
-        self,
-        generator: str,
-        created: datetime | None = None,
+        self, generator: str, created: datetime | None = None
     ) -> "DataDefBuilder":
-        """
-        Mark as Author – created at authoring time.
-        Upgrades to SDL Provenance conformance when combined with schema + source.
-        """
+        """Mark as Author – created at authoring time."""
         self._trust_level = TrustLevel.AUTHOR
         self._generator = generator
         self._created = created or datetime.now(tz=timezone.utc)
@@ -213,10 +262,7 @@ class DataDefBuilder:
         confidence: float,
         created: datetime | None = None,
     ) -> "DataDefBuilder":
-        """
-        Mark as Enriched – added post-creation by AI/tools.
-        Requires confidence score (0.0–1.0) per §6.1.
-        """
+        """Mark as Enriched – added post-creation by AI/tools. Requires confidence (0.0–1.0)."""
         if not 0.0 <= confidence <= 1.0:
             raise ValueError("confidence must be between 0.0 and 1.0")
         self._trust_level = TrustLevel.ENRICHED
@@ -228,10 +274,7 @@ class DataDefBuilder:
     # --- Binding mechanisms (§5) ---
 
     def bind_to_struct(self, object_ref: str) -> "DataDefBuilder":
-        """
-        Structure element binding (§5.2) – highest specificity.
-        E.g. '35 0 R' for object 35.
-        """
+        """Structure element binding (§5.2) – highest specificity. E.g. '35 0 R'."""
         self._struct_ref = object_ref
         return self
 
@@ -245,10 +288,7 @@ class DataDefBuilder:
         page: int,
         rect: tuple[float, float, float, float] | None = None,
     ) -> "DataDefBuilder":
-        """
-        Spatial binding (§5.4) – for untagged documents.
-        page is 1-based. rect is [x0, y0, x1, y1] in PDF user space.
-        """
+        """Spatial binding (§5.4) – page is 1-based, rect is [x0, y0, x1, y1]."""
         self._page_ref = page
         self._rect = rect
         return self
@@ -256,15 +296,7 @@ class DataDefBuilder:
     # --- Build ---
 
     def build(self, data: dict[str, Any] | str | list[Any]) -> DataDef:
-        """
-        Construct and return the DataDef object.
-
-        Parameters
-        ----------
-        data:
-            The structured data – as a dict (will be JSON-serialized),
-            a JSON string, or a list.
-        """
+        """Construct and return the DataDef object."""
         if isinstance(data, (dict, list)):
             data_str = json.dumps(data, ensure_ascii=False, indent=2)
         else:
